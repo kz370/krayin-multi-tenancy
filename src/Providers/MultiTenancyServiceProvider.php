@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 use Webkul\MultiTenancy\Http\Middleware\IdentifyTenant;
 use Webkul\MultiTenancy\Console\Commands\TenantsMigrate;
+use Diglactic\Breadcrumbs\Breadcrumbs;
+use Diglactic\Breadcrumbs\Generator as BreadcrumbTrail;
 
 class MultiTenancyServiceProvider extends ServiceProvider
 {
@@ -32,6 +34,9 @@ class MultiTenancyServiceProvider extends ServiceProvider
         // 4. Load Views
         $this->loadViewsFrom(__DIR__ . '/../Resources/views', 'multi_tenancy');
 
+        // 5. Load Translations
+        $this->loadTranslationsFrom(__DIR__ . '/../Resources/lang', 'multi_tenancy');
+
         // 5. Register Menu Item on Main Domain Only, if enabled
         $host = request()->getHost();
         $landlordHost = parse_url(config('app.url'), PHP_URL_HOST);
@@ -41,7 +46,7 @@ class MultiTenancyServiceProvider extends ServiceProvider
 
             $menuItems[] = [
                 'key'        => 'tenants',
-                'name'       => 'Tenants',
+                'name'       => 'multi_tenancy::app.menu-title',
                 'route'      => 'admin.tenants.index',
                 'sort'       => config('multi_tenancy.sort', 100),
                 'icon-class' => 'icon-settings-group',
@@ -62,6 +67,10 @@ class MultiTenancyServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../Resources/views' => resource_path('views/vendor/multi_tenancy'),
         ], 'krayin-multi-tenancy-views');
+
+        $this->publishes([
+            __DIR__ . '/../Resources/lang' => lang_path('vendor/multi_tenancy'),
+        ], 'krayin-multi-tenancy-lang');
 
 
 
