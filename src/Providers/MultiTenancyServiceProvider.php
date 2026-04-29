@@ -87,16 +87,33 @@ class MultiTenancyServiceProvider extends ServiceProvider
 
         $connectionName = config('multi_tenancy.landlord_connection_name', 'landlord');
 
-        Config::set("database.connections.{$connectionName}", [
-            'driver'    => 'mysql',
-            'host'      => env('DB_HOST', '127.0.0.1'),
-            'database'  => env('DB_LANDLORD_DATABASE', env('DB_DATABASE', 'krayin_landlord')),
-            'username'  => env('DB_USERNAME', 'forge'),
-            'password'  => env('DB_PASSWORD', ''),
-            'charset'   => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix'    => '',
-            'strict'    => true,
-        ]);
+        // Only set dynamically if the connection isn't already defined in config/database.php.
+        // This avoids overwriting a properly resolved connection with raw env() defaults.
+        if (! config("database.connections.{$connectionName}")) {
+            $default = config('database.default', 'mysql');
+            $base    = config("database.connections.{$default}", []);
+
+            // If $base is empty (not yet loaded during register phase), build from env() directly
+            if (empty($base)) {
+                Config::set("database.connections.{$connectionName}", [
+                    'driver'         => env('DB_CONNECTION', 'mysql'),
+                    'host'           => env('DB_HOST', '127.0.0.1'),
+                    'port'           => env('DB_PORT', '3306'),
+                    'database'       => env('DB_LANDLORD_DATABASE', env('DB_DATABASE', 'krayin_landlord')),
+                    'username'       => env('DB_USERNAME', 'root'),
+                    'password'       => env('DB_PASSWORD', ''),
+                    'charset'        => 'utf8mb4',
+                    'collation'      => 'utf8mb4_unicode_ci',
+                    'prefix'         => env('DB_PREFIX', ''),
+                    'prefix_indexes' => true,
+                    'strict'         => false,
+                    'engine'         => null,
+                ]);
+            } else {
+                Config::set("database.connections.{$connectionName}", array_merge($base, [
+                    'database' => env('DB_LANDLORD_DATABASE', $base['database'] ?? env('DB_DATABASE', 'krayin_landlord')),
+                ]));
+            }
+        }
     }
 }
