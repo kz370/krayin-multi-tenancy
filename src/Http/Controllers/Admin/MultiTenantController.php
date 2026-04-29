@@ -7,6 +7,7 @@ use Webkul\MultiTenancy\Models\Tenant;
 use Webkul\MultiTenancy\Services\TenantService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 use Illuminate\Support\Facades\Hash;
 
@@ -48,7 +49,13 @@ class MultiTenantController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'subdomain' => 'required|string|max:50|unique:landlord.tenants,subdomain',
+            'subdomain' => [
+                'required', 'string', 'max:50',
+                Rule::unique(
+                    config('multi_tenancy.landlord_connection_name', 'landlord') . '.' . config('multi_tenancy.table_name', 'tenants'),
+                    'subdomain'
+                ),
+            ],
             'admin_name' => 'required|string',
             'admin_email' => 'required|email',
             'admin_password' => 'required|min:6',
@@ -92,10 +99,18 @@ class MultiTenantController extends Controller
 
         $tenant = \Webkul\MultiTenancy\Models\Tenant::findOrFail($id);
 
+        $landlordTable = config('multi_tenancy.landlord_connection_name', 'landlord') . '.' . config('multi_tenancy.table_name', 'tenants');
+
         $request->validate([
             'name' => 'required|string|max:255',
-            'subdomain' => 'required|string|max:50|unique:landlord.tenants,subdomain,' . $id,
-            'database_name' => 'required|string|max:64|unique:landlord.tenants,database_name,' . $id,
+            'subdomain' => [
+                'required', 'string', 'max:50',
+                Rule::unique($landlordTable, 'subdomain')->ignore($id),
+            ],
+            'database_name' => [
+                'required', 'string', 'max:64',
+                Rule::unique($landlordTable, 'database_name')->ignore($id),
+            ],
             'is_active' => 'boolean',
             'admin_email' => 'nullable|email',
             'admin_password' => 'nullable|min:6',
